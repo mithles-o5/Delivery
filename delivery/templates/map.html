@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamail Route Planner</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+    <!-- Leaflet Control Geocoder CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+        /* Make the map full-page */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1; /* Ensure the map is behind other elements */
+        }
+
+        /* Style the search box */
+        .search-box {
+            position: absolute;
+            top: 5px; /* Align to the top */
+            right: 5px; /* Align to the right */
+            z-index: 2; /* Place the search box above the map */
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 350px; /* Fixed width for better alignment */
+        }
+
+        .search-box input {
+            display: block;
+            width: 90%;
+            margin-bottom: 10px;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .search-box button {
+            display: block;
+            width: 95%;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        .search-box button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Loading indicator */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 3;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <!-- Search Box -->
+    <div class="search-box">
+        <input id="origin" type="text" placeholder="Enter source">
+        <input id="destination" type="text" placeholder="Enter destination">
+        <button onclick="calculateRoute()">Show Route</button>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading">Calculating route...</div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <!-- Leaflet Control Geocoder JS -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <script>
+        let map;
+        let control;
+
+        // Define India's bounding box (latitude and longitude limits)
+        const indiaBounds = [
+            [6.4627, 68.1113], // Southwest corner (bottom-left)
+            [35.5012, 97.3954] // Northeast corner (top-right)
+        ];
+
+        // Initialize the map
+        function initMap() {
+            map = L.map('map').setView([20.5937, 78.9629], 5); // Default to India's center coordinates
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18,
+                minZoom: 5
+            }).addTo(map);
+
+            // Restrict the map to India's bounding box
+            map.setMaxBounds(indiaBounds);
+            map.on('drag', () => {
+                map.panInsideBounds(indiaBounds, { animate: false });
+            });
+
+            // Initialize routing control
+            control = L.Routing.control({
+                waypoints: [],
+                routeWhileDragging: true,
+                geocoder: L.Control.Geocoder.nominatim() // Use the geocoder from leaflet-control-geocoder
+            }).addTo(map);
+        }
+
+        // Calculate and display the route
+        function calculateRoute() {
+            const origin = document.getElementById('origin').value.trim();
+            const destination = document.getElementById('destination').value.trim();
+
+            // Validate inputs
+            if (!origin || !destination) {
+                alert("Please enter both source and destination.");
+                return;
+            }
+
+            // Check if control is initialized
+            if (!control) {
+                alert("Routing control is not initialized. Please refresh the page.");
+                return;
+            }
+
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading');
+            loadingIndicator.style.display = 'block';
+
+            // Clear previous routes
+            control.setWaypoints([]);
+
+            // Geocode addresses to coordinates
+            geocodeAddress(origin, (originCoords) => {
+                geocodeAddress(destination, (destinationCoords) => {
+                    loadingIndicator.style.display = 'none'; // Hide loading indicator
+
+                    // Set waypoints for routing
+                    control.setWaypoints([
+                        L.latLng(originCoords.lat, originCoords.lon),
+                        L.latLng(destinationCoords.lat, destinationCoords.lon)
+                    ]);
+                });
+            });
+        }
+
+        // Geocode addresses using OpenStreetMap Nominatim
+        function geocodeAddress(address, callback) {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=IN`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        callback({
+                            lat: parseFloat(data[0].lat),
+                            lon: parseFloat(data[0].lon)
+                        });
+                    } else {
+                        alert('Address not found: ' + address);
+                    }
+                })
+                .catch(error => {
+                    console.error("Geocoding error:", error);
+                    alert("Failed to geocode address. Please try again.");
+                });
+        }
+
+        // Initialize the map on page load
+        initMap();
+    </script>
+</body>
+</html>

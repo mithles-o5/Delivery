@@ -37,3 +37,20 @@ class PredictDelay(APIView):
             return Response({"prediction": "Delayed" if prediction == 1 else "On-Time"})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+# @login_required  # Ensure only logged-in users can access the map
+def map_view(request):
+    return render(request, 'map.html')
+
+from django.http import JsonResponse
+
+def get_route(request):
+    source = request.GET.get('source')
+    destination = request.GET.get('destination')
+
+    # Example: Use OSRM or another routing service to calculate the route
+    # Replace with actual routing logic
+    return JsonResponse({"route": {"coordinates": [[78.9629, 20.5937], [78.476, 17.385]]}})

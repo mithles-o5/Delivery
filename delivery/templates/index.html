@@ -1,94 +1,10 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery Delay Predictor</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-        }
-        input, button {
-            display: block;
-            width: 100%;
-            margin: 10px 0;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .result {
-            margin-top: 20px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-    </style>
+    <title>Document</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Delivery Delay Predictor</h1>
-        <label for="distance">Distance (km):</label>
-        <input type="number" id="distance" placeholder="Enter distance">
-
-        <label for="is_bad_weather">Bad Weather (1 for Yes, 0 for No):</label>
-        <input type="number" id="is_bad_weather" placeholder="Enter 1 or 0">
-
-        <label for="temperature">Temperature (°C):</label>
-        <input type="number" id="temperature" placeholder="Enter temperature">
-
-        <label for="humidity">Humidity (%):</label>
-        <input type="number" id="humidity" placeholder="Enter humidity">
-
-        <button onclick="predictDelay()">Predict</button>
-
-        <div class="result" id="result"></div>
-    </div>
-
-    <script>
-        async function predictDelay() {
-            // Get input values
-            const distance = document.getElementById('distance').value;
-            const is_bad_weather = document.getElementById('is_bad_weather').value;
-            const temperature = document.getElementById('temperature').value;
-            const humidity = document.getElementById('humidity').value;
-
-            // Validate inputs
-            if (!distance || !is_bad_weather || !temperature || !humidity) {
-                alert("Please fill in all fields.");
-                return;
-            }
-
-            // Prepare data for the API
-            const data = {
-                distance: parseFloat(distance),
-                is_bad_weather: parseInt(is_bad_weather),
-                temperature: parseFloat(temperature),
-                humidity: parseFloat(humidity)
-            };
-
-            try {
-                // Send POST request to the backend
-                const response = await fetch('http://127.0.0.1:8000/api/predict/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                // Parse the response
-                const result = await response.json();
-
-                // Display the result
-                document.getElementById('result').innerText = `Prediction: ${result.prediction}`;
-            } catch (error) {
-                console.error("Error:", error);
-                document.getElementById('result').innerText = "An error occurred. Please try again.";
-            }
-        }
-    </script>
+    <h1>Home</h1>
 </body>
 </html>
