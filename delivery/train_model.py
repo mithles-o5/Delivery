@@ -215,3 +215,4 @@ if __name__ == "__main__":
     joblib.dump(scaler, os.path.join(MODEL_DIR, 'scaler.pkl'))
 
     print("Model and scaler saved successfully.")
+    
