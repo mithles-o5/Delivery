@@ -3,41 +3,38 @@
 <head>
     <title>Dynamail Route Planner</title>
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <!-- Leaflet Routing Machine CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
     <!-- Leaflet Control Geocoder CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
     <style>
-        /* Make the map full-page */
         html, body {
             margin: 0;
             padding: 0;
             height: 100%;
-            overflow: hidden; /* Prevent scrollbars */
+            overflow: hidden;
         }
         #map {
             position: absolute;
             top: 0;
             bottom: 0;
             left: 0;
-            right: 0;
-            z-index: 1; /* Ensure the map is behind other elements */
+            right: 500px;
+            z-index: 1;
         }
-
-        /* Style the search box */
         .search-box {
             position: absolute;
-            top: 5px; /* Align to the top */
-            right: 5px; /* Align to the right */
-            z-index: 2; /* Place the search box above the map */
+            top: 5px;
+            left: 1050px;
+            right: 5px;
+            z-index: 2;
             background: white;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 350px; /* Fixed width for better alignment */
+            width: 450px;
         }
-
         .search-box input {
             display: block;
             width: 90%;
@@ -47,7 +44,6 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-
         .search-box button {
             display: block;
             width: 95%;
@@ -59,12 +55,22 @@
             border: none;
             border-radius: 4px;
         }
-
         .search-box button:hover {
             background-color: #0056b3;
         }
-
-        /* Loading indicator */
+        #weather-details {
+            position: absolute;
+            left: 1050px;
+            top: 200px;
+            right: 5px;
+            z-index: 2;
+            background: white;
+            padding: 5px;
+            border-radius: 8px;
+            width: 450px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
         .loading {
             position: absolute;
             top: 50%;
@@ -75,103 +81,180 @@
             padding: 10px 20px;
             border-radius: 5px;
             z-index: 3;
-            display: none; /* Hidden by default */
+            display: none;
+        }
+        .leaflet-routing-geocoders {
+            display: none;
+        }
+        .leaflet-control-attribution.leaflet-control {
+            display: none;
+        }
+        .leaflet-control-zoom.leaflet-bar.leaflet-control {
+            display: none;
+        }
+        .custom-attribution{
+            display: none;
+        }
+        .custom-attribution {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            z-index: 1000;
+            font-size: 12px;
+            background: white;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+            .search-box,
+            #weather-details {
+                left: auto;
+                right: 5px;
+                width: 90%;
+                top: 10px;
+            }
+            #map {
+                right: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Search Box -->
     <div class="search-box">
         <input id="origin" type="text" placeholder="Enter source">
         <input id="destination" type="text" placeholder="Enter destination">
         <button onclick="calculateRoute()">Show Route</button>
     </div>
-
-    <!-- Loading Indicator -->
     <div id="loading" class="loading">Calculating route...</div>
-
-    <!-- Map -->
     <div id="map"></div>
+    <div id="weather-details"></div>
+    <div class="custom-attribution">
+        © <a href="https://www.openstreetmap.org/" target="_blank">OpenStreetMap</a> contributors
+    </div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <!-- Leaflet Routing Machine JS -->
     <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-    <!-- Leaflet Control Geocoder JS -->
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
     <script>
         let map;
         let control;
 
-        // Define India's bounding box (latitude and longitude limits)
         const indiaBounds = [
-            [6.4627, 68.1113], // Southwest corner (bottom-left)
-            [35.5012, 97.3954] // Northeast corner (top-right)
+            [6.4627, 68.1113],
+            [35.5012, 97.3954]
         ];
 
-        // Initialize the map
+        const cityToAirport = {
+            "ahmedabad": "AMD",
+            "amritsar": "ATQ",
+            "bangalore": "BLR",
+            "bhubaneswar": "BBI",
+            "chandigarh": "IXC",
+            "chennai": "MAA",
+            "coimbatore": "CJB",
+            "dehradun": "DED",
+            "delhi": "DEL",
+            "goa": "GOI",
+            "guwahati": "GAU",
+            "hyderabad": "HYD",
+            "indore": "IDR",
+            "jaipur": "JAI",
+            "kochi": "COK",
+            "kolkata": "CCU",
+            "lucknow": "LKO",
+            "madurai": "IXM",
+            "mangalore": "IXE",
+            "mumbai": "BOM",
+            "nagpur": "NAG",
+            "patna": "PAT",
+            "pune": "PNQ",
+            "ranchi": "IXR",
+            "srinagar": "SXR",
+            "thiruvananthapuram": "TRV",
+            "varanasi": "VNS",
+            "visakhapatnam": "VTZ"
+        };
+
         function initMap() {
-            map = L.map('map').setView([20.5937, 78.9629], 5); // Default to India's center coordinates
+            map = L.map('map').setView([20.5937, 78.9629], 5);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
                 maxZoom: 18,
                 minZoom: 5
             }).addTo(map);
 
-            // Restrict the map to India's bounding box
             map.setMaxBounds(indiaBounds);
             map.on('drag', () => {
                 map.panInsideBounds(indiaBounds, { animate: false });
             });
 
-            // Initialize routing control
             control = L.Routing.control({
                 waypoints: [],
-                routeWhileDragging: true,
-                geocoder: L.Control.Geocoder.nominatim() // Use the geocoder from leaflet-control-geocoder
+                routeWhileDragging: false,
+                geocoder: L.Control.Geocoder.nominatim()
             }).addTo(map);
         }
 
-        // Calculate and display the route
         function calculateRoute() {
             const origin = document.getElementById('origin').value.trim();
             const destination = document.getElementById('destination').value.trim();
+            const loadingIndicator = document.getElementById('loading');
+            const weatherDetailsDiv = document.getElementById('weather-details');
 
-            // Validate inputs
             if (!origin || !destination) {
                 alert("Please enter both source and destination.");
                 return;
             }
 
-            // Check if control is initialized
             if (!control) {
                 alert("Routing control is not initialized. Please refresh the page.");
                 return;
             }
 
-            // Show loading indicator
-            const loadingIndicator = document.getElementById('loading');
             loadingIndicator.style.display = 'block';
-
-            // Clear previous routes
+            weatherDetailsDiv.innerHTML = '';
             control.setWaypoints([]);
 
-            // Geocode addresses to coordinates
-            geocodeAddress(origin, (originCoords) => {
-                geocodeAddress(destination, (destinationCoords) => {
-                    loadingIndicator.style.display = 'none'; // Hide loading indicator
+            const originAirport = getAirportCode(origin.toLowerCase());
+            const destinationAirport = getAirportCode(destination.toLowerCase());
+            const hasFlightData = originAirport && destinationAirport;
 
-                    // Set waypoints for routing
+            if (!hasFlightData) {
+                console.warn("One or both locations do not have flight data. Proceeding without it.");
+            }
+
+            geocodeAddress(origin, (originCoords) => {
+                if (!originCoords) {
+                    alert("Failed to geocode origin.");
+                    loadingIndicator.style.display = 'none';
+                    return;
+                }
+
+                geocodeAddress(destination, (destinationCoords) => {
+                    if (!destinationCoords) {
+                        alert("Failed to geocode destination.");
+                        loadingIndicator.style.display = 'none';
+                        return;
+                    }
+
                     control.setWaypoints([
                         L.latLng(originCoords.lat, originCoords.lon),
                         L.latLng(destinationCoords.lat, destinationCoords.lon)
                     ]);
+
+                    control.on('routesfound', function () {
+                        loadingIndicator.style.display = 'none';
+                    });
+
+                    fetchWeather(originCoords.lat, originCoords.lon, "Source", true);
+                    fetchWeather(destinationCoords.lat, destinationCoords.lon, "Destination");
+
+                    if (hasFlightData) {
+                        fetchFlightData(originAirport, destinationAirport);
+                    }
                 });
             });
         }
 
-        // Geocode addresses using OpenStreetMap Nominatim
         function geocodeAddress(address, callback) {
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=IN`)
                 .then(response => response.json())
@@ -182,16 +265,84 @@
                             lon: parseFloat(data[0].lon)
                         });
                     } else {
-                        alert('Address not found: ' + address);
+                        console.warn('Address not found:', address);
+                        callback(null);
                     }
                 })
                 .catch(error => {
                     console.error("Geocoding error:", error);
-                    alert("Failed to geocode address. Please try again.");
+                    callback(null);
                 });
         }
 
-        // Initialize the map on page load
+        function fetchWeather(lat, lon, locationName, isFirst = false) {
+            const apiKey = 'bd5e378503939ddaee76f12ad7a97608';
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const weatherDetailsDiv = document.getElementById('weather-details');
+                    if (isFirst) weatherDetailsDiv.innerHTML = '';
+                    const weather = data.weather[0];
+                    const main = data.main;
+
+                    weatherDetailsDiv.innerHTML += `
+                        <h4>Weather at ${locationName}</h4>
+                        <p><strong>Temperature:</strong> ${main.temp}°C</p>
+                        <p><strong>Weather:</strong> ${weather.description}</p>
+                        <p><strong>Humidity:</strong> ${main.humidity}%</p>
+                        <p><strong>Wind Speed:</strong> ${data.wind.speed} m/s</p>
+                        <hr>
+                    `;
+                })
+                .catch(error => {
+                    console.error("Weather API error:", error);
+                    alert("Failed to fetch weather data. Please try again.");
+                });
+        }
+
+        function fetchFlightData(origin, destination) {
+            const apiKey = 'e5ad81956a08caaa8b8a88de0118c90d';
+            const url = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&dep_iata=${origin}&arr_iata=${destination}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const weatherDetailsDiv = document.getElementById('weather-details');
+                    const flights = data.data;
+
+                    if (flights && flights.length > 0) {
+                        const flight = flights[0];
+                        const departureTime = new Date(flight.departure.scheduled).toLocaleString();
+                        const arrivalTime = new Date(flight.arrival.scheduled).toLocaleString();
+                        const flightCost = flight.price ? `₹${flight.price.toFixed(2)}` : "Not Available";
+
+                        weatherDetailsDiv.innerHTML += `
+                            <h4>Flight Details</h4>
+                            <p><strong>Departure:</strong> ${departureTime}</p>
+                            <p><strong>Arrival:</strong> ${arrivalTime}</p>
+                            <p><strong>Cost:</strong> ${flightCost}</p>
+                            <hr>
+                        `;
+                    } else {
+                        weatherDetailsDiv.innerHTML += `
+                            <h4>Flight Details</h4>
+                            <p>No flights found between ${origin} and ${destination}.</p>
+                            <hr>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error("Flight API error:", error);
+                    alert("Failed to fetch flight data. Please try again.");
+                });
+        }
+
+        function getAirportCode(cityName) {
+            return cityToAirport[cityName] || null;
+        }
+
         initMap();
     </script>
 </body>

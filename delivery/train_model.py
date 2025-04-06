@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, classification_report
 import joblib
 
 # Step 1: Load and Preprocess Datasets
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
 EXCEL_FILES_DIR = os.path.join(BASE_DIR, "excel_files")
 TEMPERATURE_DIR = os.path.join(EXCEL_FILES_DIR, "temperature")
 

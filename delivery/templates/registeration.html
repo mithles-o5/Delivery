@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MacBook Inspired Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: white;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, 
+                #cb6cf4 10%, 
+                #9b59b6 25%, 
+                #600585 50%, 
+                #be90d4 75%, 
+                #d2b4de 75%);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .register-container {
+            width: 400px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2),
+                        0 0 0 1px rgba(255, 255, 255, 0.1),
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+                        inset 0 0 20px rgba(255, 255, 255, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .register-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .register-header h1,
+        .register-header p,
+        .register-footer p,
+        .register-footer a {
+            color: white;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            font-size: 16px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .register-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to left, #4ba8c9, #b740ea);
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(220, 139, 255, 0.4);
+            color: white;
+        }
+
+        .register-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(142, 68, 173, 0.6);
+        }
+
+        .register-footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .register-footer a {
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <h1>Create an Account</h1>
+            <p>Sign up to get started</p>
+        </div>
+        
+        <form>
+            <div class="input-group">
+                <input type="text" placeholder="Full Name" required>
+            </div>
+            
+            <div class="input-group">
+                <input type="email" placeholder="Email" required>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" placeholder="Password" required>
+            </div>
+            
+            <button type="submit" class="register-button">Sign Up</button>
+            
+            <div class="register-footer">
+                <p>Already have an account? <a href="#">Sign in</a></p>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

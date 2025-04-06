@@ -45,6 +45,9 @@ from django.contrib.auth.decorators import login_required
 def map_view(request):
     return render(request, 'map.html')
 
+def login(request):
+    return render (request,'login.html')
+
 from django.http import JsonResponse
 
 def get_route(request):
