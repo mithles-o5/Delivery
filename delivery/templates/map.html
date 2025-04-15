@@ -2,120 +2,46 @@
 <html>
 <head>
     <title>Dynamail Route Planner</title>
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <!-- Leaflet Routing Machine CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
-    <!-- Leaflet Control Geocoder CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-        }
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 500px;
-            z-index: 1;
-        }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 500px; z-index: 1; }
         .search-box {
-            position: absolute;
-            top: 5px;
-            left: 1050px;
-            right: 5px;
-            z-index: 2;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 450px;
+            position: absolute; top: 5px; left: 1050px; right: 5px; z-index: 2;
+            background: white; padding: 15px; border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 450px;
         }
-        .search-box input {
-            display: block;
-            width: 90%;
-            margin-bottom: 10px;
-            padding: 8px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .search-box input, .search-box button {
+            display: block; width: 90%; margin-bottom: 10px;
+            padding: 8px; font-size: 16px;
         }
         .search-box button {
-            display: block;
-            width: 95%;
-            padding: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
+            cursor: pointer; background-color: #007bff; color: white;
+            border: none; border-radius: 4px;
         }
-        .search-box button:hover {
-            background-color: #0056b3;
-        }
-        #weather-details {
-            position: absolute;
-            left: 1050px;
-            top: 200px;
-            right: 5px;
-            z-index: 2;
-            background: white;
-            padding: 5px;
-            border-radius: 8px;
-            width: 450px;
-            max-height: 400px;
-            overflow-y: auto;
+        .search-box button:hover { background-color: #0056b3; }
+        #info-details {
+            position: absolute; left: 1050px; top: 200px; right: 5px; z-index: 2;
+            background: white; padding: 10px; border-radius: 8px;
+            width: 450px; max-height: 420px; overflow-y: auto;
         }
         .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            z-index: 3;
+            background: rgba(0, 0, 0, 0.8); color: white;
+            padding: 10px 20px; border-radius: 5px; z-index: 3; display: none;
+        }
+        .leaflet-routing-geocoders, .leaflet-control-attribution.leaflet-control, .leaflet-control-zoom.leaflet-bar.leaflet-control {
             display: none;
         }
-        .leaflet-routing-geocoders {
-            display: none;
-        }
-        .leaflet-control-attribution.leaflet-control {
-            display: none;
-        }
-        .leaflet-control-zoom.leaflet-bar.leaflet-control {
-            display: none;
-        }
-        .custom-attribution{
-            display: none;
-        }
-        .custom-attribution {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            z-index: 1000;
-            font-size: 12px;
-            background: white;
-            padding: 4px;
-            border-radius: 4px;
-        }
+        .custom-attribution { display: none; }
         @media (max-width: 768px) {
-            .search-box,
-            #weather-details {
-                left: auto;
-                right: 5px;
-                width: 90%;
-                top: 10px;
+            .search-box, #info-details {
+                left: auto; right: 5px; width: 90%; top: 10px;
             }
-            #map {
-                right: 0;
-            }
+            #map { right: 0; }
         }
     </style>
 </head>
@@ -127,7 +53,7 @@
     </div>
     <div id="loading" class="loading">Calculating route...</div>
     <div id="map"></div>
-    <div id="weather-details"></div>
+    <div id="info-details"></div>
     <div class="custom-attribution">
         © <a href="https://www.openstreetmap.org/" target="_blank">OpenStreetMap</a> contributors
     </div>
@@ -138,41 +64,16 @@
     <script>
         let map;
         let control;
-
-        const indiaBounds = [
-            [6.4627, 68.1113],
-            [35.5012, 97.3954]
-        ];
+        const indiaBounds = [[6.4627, 68.1113], [35.5012, 97.3954]];
 
         const cityToAirport = {
-            "ahmedabad": "AMD",
-            "amritsar": "ATQ",
-            "bangalore": "BLR",
-            "bhubaneswar": "BBI",
-            "chandigarh": "IXC",
-            "chennai": "MAA",
-            "coimbatore": "CJB",
-            "dehradun": "DED",
-            "delhi": "DEL",
-            "goa": "GOI",
-            "guwahati": "GAU",
-            "hyderabad": "HYD",
-            "indore": "IDR",
-            "jaipur": "JAI",
-            "kochi": "COK",
-            "kolkata": "CCU",
-            "lucknow": "LKO",
-            "madurai": "IXM",
-            "mangalore": "IXE",
-            "mumbai": "BOM",
-            "nagpur": "NAG",
-            "patna": "PAT",
-            "pune": "PNQ",
-            "ranchi": "IXR",
-            "srinagar": "SXR",
-            "thiruvananthapuram": "TRV",
-            "varanasi": "VNS",
-            "visakhapatnam": "VTZ"
+            "ahmedabad": "AMD", "amritsar": "ATQ", "bangalore": "BLR", "bhubaneswar": "BBI",
+            "chandigarh": "IXC", "chennai": "MAA", "coimbatore": "CJB", "dehradun": "DED",
+            "delhi": "DEL", "goa": "GOI", "guwahati": "GAU", "hyderabad": "HYD",
+            "indore": "IDR", "jaipur": "JAI", "kochi": "COK", "kolkata": "CCU",
+            "lucknow": "LKO", "madurai": "IXM", "mangalore": "IXE", "mumbai": "BOM",
+            "nagpur": "NAG", "patna": "PAT", "pune": "PNQ", "ranchi": "IXR",
+            "srinagar": "SXR", "thiruvananthapuram": "TRV", "varanasi": "VNS", "visakhapatnam": "VTZ"
         };
 
         function initMap() {
@@ -183,9 +84,7 @@
             }).addTo(map);
 
             map.setMaxBounds(indiaBounds);
-            map.on('drag', () => {
-                map.panInsideBounds(indiaBounds, { animate: false });
-            });
+            map.on('drag', () => map.panInsideBounds(indiaBounds, { animate: false }));
 
             control = L.Routing.control({
                 waypoints: [],
@@ -194,153 +93,107 @@
             }).addTo(map);
         }
 
-        function calculateRoute() {
+        async function calculateRoute() {
             const origin = document.getElementById('origin').value.trim();
             const destination = document.getElementById('destination').value.trim();
             const loadingIndicator = document.getElementById('loading');
-            const weatherDetailsDiv = document.getElementById('weather-details');
+            const infoDiv = document.getElementById('info-details');
 
-            if (!origin || !destination) {
-                alert("Please enter both source and destination.");
-                return;
-            }
-
-            if (!control) {
-                alert("Routing control is not initialized. Please refresh the page.");
-                return;
-            }
+            if (!origin || !destination) return alert("Please enter both source and destination.");
+            if (!control) return alert("Routing control not initialized. Please refresh the page.");
 
             loadingIndicator.style.display = 'block';
-            weatherDetailsDiv.innerHTML = '';
+            infoDiv.innerHTML = '';
             control.setWaypoints([]);
 
             const originAirport = getAirportCode(origin.toLowerCase());
             const destinationAirport = getAirportCode(destination.toLowerCase());
-            const hasFlightData = originAirport && destinationAirport;
 
-            if (!hasFlightData) {
-                console.warn("One or both locations do not have flight data. Proceeding without it.");
-            }
+            try {
+                const originCoords = await geocodeAddressAsync(origin);
+                const destinationCoords = await geocodeAddressAsync(destination);
 
-            geocodeAddress(origin, (originCoords) => {
-                if (!originCoords) {
-                    alert("Failed to geocode origin.");
-                    loadingIndicator.style.display = 'none';
-                    return;
+                control.setWaypoints([
+                    L.latLng(originCoords.lat, originCoords.lon),
+                    L.latLng(destinationCoords.lat, destinationCoords.lon)
+                ]);
+
+                control.on('routesfound', () => loadingIndicator.style.display = 'none');
+
+                await fetchWeather(originCoords.lat, originCoords.lon, "Source", true);
+                await fetchWeather(destinationCoords.lat, destinationCoords.lon, "Destination");
+
+                if (originAirport && destinationAirport) {
+                    await fetchFlightData(originAirport, destinationAirport);
                 }
 
-                geocodeAddress(destination, (destinationCoords) => {
-                    if (!destinationCoords) {
-                        alert("Failed to geocode destination.");
-                        loadingIndicator.style.display = 'none';
-                        return;
-                    }
-
-                    control.setWaypoints([
-                        L.latLng(originCoords.lat, originCoords.lon),
-                        L.latLng(destinationCoords.lat, destinationCoords.lon)
-                    ]);
-
-                    control.on('routesfound', function () {
-                        loadingIndicator.style.display = 'none';
-                    });
-
-                    fetchWeather(originCoords.lat, originCoords.lon, "Source", true);
-                    fetchWeather(destinationCoords.lat, destinationCoords.lon, "Destination");
-
-                    if (hasFlightData) {
-                        fetchFlightData(originAirport, destinationAirport);
-                    }
-                });
-            });
+            } catch (err) {
+                alert(err.message);
+                loadingIndicator.style.display = 'none';
+            }
         }
 
-        function geocodeAddress(address, callback) {
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=IN`)
-                .then(response => response.json())
+        function geocodeAddressAsync(address) {
+            return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=IN`)
+                .then(res => res.json())
                 .then(data => {
                     if (data.length > 0) {
-                        callback({
-                            lat: parseFloat(data[0].lat),
-                            lon: parseFloat(data[0].lon)
-                        });
+                        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
                     } else {
-                        console.warn('Address not found:', address);
-                        callback(null);
+                        throw new Error(`Failed to geocode ${address}`);
                     }
-                })
-                .catch(error => {
-                    console.error("Geocoding error:", error);
-                    callback(null);
                 });
         }
 
-        function fetchWeather(lat, lon, locationName, isFirst = false) {
-            const apiKey = 'bd5e378503939ddaee76f12ad7a97608';
-            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+        async function fetchWeather(lat, lon, label, clear = false) {
+            const apiKey = 'f65e7d3178e84ffdabf82714251104';
+            const div = document.getElementById('info-details');
+            if (clear) div.innerHTML = '';
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const weatherDetailsDiv = document.getElementById('weather-details');
-                    if (isFirst) weatherDetailsDiv.innerHTML = '';
-                    const weather = data.weather[0];
-                    const main = data.main;
+            const reverseRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const reverseData = await reverseRes.json();
+            const city = reverseData?.address?.city || reverseData?.address?.town || reverseData?.address?.village || "Unknown";
 
-                    weatherDetailsDiv.innerHTML += `
-                        <h4>Weather at ${locationName}</h4>
-                        <p><strong>Temperature:</strong> ${main.temp}°C</p>
-                        <p><strong>Weather:</strong> ${weather.description}</p>
-                        <p><strong>Humidity:</strong> ${main.humidity}%</p>
-                        <p><strong>Wind Speed:</strong> ${data.wind.speed} m/s</p>
-                        <hr>
-                    `;
-                })
-                .catch(error => {
-                    console.error("Weather API error:", error);
-                    alert("Failed to fetch weather data. Please try again.");
-                });
+            const weatherRes = await fetch(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}&aqi=no`);
+            const weatherData = await weatherRes.json();
+
+            div.innerHTML += `
+                <h4>Weather at ${label}</h4>
+                <p><strong>Temperature:</strong> ${weatherData.current.temp_c}°C</p>
+                <p><strong>Condition:</strong> ${weatherData.current.condition.text}</p>
+                <p><strong>Humidity:</strong> ${weatherData.current.humidity}%</p>
+                <p><strong>Wind:</strong> ${weatherData.current.wind_kph} km/h</p>
+                <hr>
+            `;
         }
 
         function fetchFlightData(origin, destination) {
-            const apiKey = 'e5ad81956a08caaa8b8a88de0118c90d';
-            const url = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&dep_iata=${origin}&arr_iata=${destination}`;
+            const apiKey = '2137911892b31a1b3a1b76524fdca584';
+            const div = document.getElementById('info-details');
 
-            fetch(url)
-                .then(response => response.json())
+            return fetch(`https://api.aviationstack.com/v1/flights?access_key=${apiKey}&dep_iata=${origin}&arr_iata=${destination}`)
+                .then(res => res.json())
                 .then(data => {
-                    const weatherDetailsDiv = document.getElementById('weather-details');
-                    const flights = data.data;
-
-                    if (flights && flights.length > 0) {
-                        const flight = flights[0];
-                        const departureTime = new Date(flight.departure.scheduled).toLocaleString();
-                        const arrivalTime = new Date(flight.arrival.scheduled).toLocaleString();
-                        const flightCost = flight.price ? `₹${flight.price.toFixed(2)}` : "Not Available";
-
-                        weatherDetailsDiv.innerHTML += `
+                    const flight = data.data?.[0];
+                    if (flight) {
+                        const dep = new Date(flight.departure.scheduled).toLocaleString();
+                        const arr = new Date(flight.arrival.scheduled).toLocaleString();
+                        div.innerHTML += `
                             <h4>Flight Details</h4>
-                            <p><strong>Departure:</strong> ${departureTime}</p>
-                            <p><strong>Arrival:</strong> ${arrivalTime}</p>
-                            <p><strong>Cost:</strong> ${flightCost}</p>
+                            <p><strong>Departure:</strong> ${dep}</p>
+                            <p><strong>Arrival:</strong> ${arr}</p>
+                            <p><strong>Cost:</strong> ₹${flight.price?.toFixed(2) || 'Not Available'}</p>
                             <hr>
                         `;
                     } else {
-                        weatherDetailsDiv.innerHTML += `
-                            <h4>Flight Details</h4>
-                            <p>No flights found between ${origin} and ${destination}.</p>
-                            <hr>
-                        `;
+                        div.innerHTML += `<h4>Flight Details</h4><p>No flight found between selected cities.</p><hr>`;
                     }
                 })
-                .catch(error => {
-                    console.error("Flight API error:", error);
-                    alert("Failed to fetch flight data. Please try again.");
-                });
+                .catch(() => alert("Flight data fetch error."));
         }
 
-        function getAirportCode(cityName) {
-            return cityToAirport[cityName] || null;
+        function getAirportCode(city) {
+            return cityToAirport[city] || null;
         }
 
         initMap();

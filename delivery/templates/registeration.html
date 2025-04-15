@@ -19,11 +19,11 @@
             justify-content: center;
             align-items: center;
             background: linear-gradient(135deg, 
-                #cb6cf4 10%, 
-                #9b59b6 25%, 
-                #600585 50%, 
-                #be90d4 75%, 
-                #d2b4de 75%);
+            #78d2e9 50%, 
+            #1ea2db 65%,
+            #a6daf7 60%, 
+            #89c1e7 25%, 
+            #9ad9f6 15%);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
         }
@@ -118,14 +118,30 @@
             text-decoration: none;
             font-weight: 500;
         }
+        .svg-decor {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 100px;
+    /* height: 45px; */
+    opacity: 0.9;
+    z-index: 2;
+    pointer-events: none;
+}
+
+        
     </style>
 </head>
 <body>
+    {% load static %}
+    <img src="./static/Frame_1-removebg-preview.png" alt="Bardia" class="svg-decor">
     <div class="register-container">
         <div class="register-header">
             <h1>Create an Account</h1>
             <p>Sign up to get started</p>
         </div>
+        
+
         
         <form>
             <div class="input-group">

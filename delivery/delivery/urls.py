@@ -17,12 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
-from Aimodel.views import map_view,login
+from Aimodel.views import map_view,login,register
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('Aimodel.urls')),  # Backend API
     path('', TemplateView.as_view(template_name='index.html'), name='frontend'),  # Frontend
     path('map/', map_view, name='map'),
     path('login/', login, name='login'),
+    path('register/', register, name='register')
     # path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
 ]
