@@ -1,0 +1,5 @@
+source,destination,src_weather,src_temp,dst_weather,dst_temp,flight_duration_min,road_duration_min,road_distance_km,road_cost_inr
+Delhi,Mumbai,Partly cloudy,20.3,Clear,29.2,145.0,1004.1083333333333,1336.112,5344.448
+Chennai,Bangalore,Clear,29.5,Clear,31.5,75.0,247.33666666666667,323.0504,1292.2016
+Kolkata,Hyderabad,Mist,31.0,Clear,36.5,130.0,1044.9583333333333,1452.9727,5811.8908
+Ahmedabad,Jaipur,Clear,34.9,Mist,34.4,105.0,469.8233333333334,653.2247,2612.8988

@@ -17,13 +17,25 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
-from Aimodel.views import map_view,login,register
+from Aimodel.views import login,register,map_view,get_transport_data,home,profile
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('Aimodel.urls')),  # Backend API
     path('', TemplateView.as_view(template_name='index.html'), name='frontend'),  # Frontend
-    path('map/', map_view, name='map'),
     path('login/', login, name='login'),
-    path('register/', register, name='register')
+    path('map/', map_view, name='map'),
+    path('profile/', profile, name='profile'),
+    path('home/', home, name='home'),
+    path('register/', register, name='register'),
+    path('api/get-transport-data/', get_transport_data, name='get_transport_data'),
+    # static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     # path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+
+urlpatterns += staticfiles_urlpatterns()

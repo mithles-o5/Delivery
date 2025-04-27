@@ -1,95 +1,85 @@
-import os
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 import joblib
+import os
+import numpy as np
+import pandas as pd
 
-# Step 1: Load Railway Dataset
-def load_railway_data():
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    EXCEL_FILES_DIR = os.path.join(BASE_DIR, "excel_files")
-    file_path = os.path.join(EXCEL_FILES_DIR, "railway.json")
-    
-    railway_data = pd.read_json(file_path)
-    
-    # Convert 'departure' to datetime with a default date
-    railway_data['departure'] = pd.to_datetime(railway_data['departure'], format="%H:%M:%S", errors='coerce')
-    
-    # Add a default date (e.g., '2023-01-01') to ensure datetime compatibility
-    railway_data['departure'] = railway_data['departure'].apply(
-        lambda x: x.replace(year=2023, month=1, day=1) if not pd.isnull(x) else x
-    )
-    
-    # Drop rows with missing datetime values
-    railway_data = railway_data.dropna(subset=['departure'])
-    
-    # Calculate train duration in hours
-    railway_data['train_duration'] = railway_data.groupby('train_number')['departure'].transform(
-        lambda x: x.max() - x.min()
-    ).dt.total_seconds() / 3600
-    
-    # Add a 'date' column based on departure time
-    railway_data['date'] = railway_data['departure'].dt.date
-    
-    return railway_data[['train_number', 'station_code', 'train_duration', 'date']].rename(columns={
-        'station_code': 'source',
-        'train_number': 'train_id'
-    })
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Step 2: Feature Engineering
-def engineer_features(railway_data):
-    # Add placeholder features for weather and other modes of transport
-    railway_data['is_bad_weather'] = 0  # Placeholder for bad weather
-    railway_data['flight_duration'] = 0  # Placeholder for flight data
-    railway_data['road_duration'] = 0  # Placeholder for road data
-    
-    # Define Target Variable (Assume train is always the best mode for simplicity)
-    railway_data['best_mode_encoded'] = 1  # 1 represents 'train'
-    
-    return railway_data
+@csrf_exempt
+def predict_transport_mode(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            origin = data.get('origin')
+            destination = data.get('destination')
+            flight_data = data.get('flight_data', {})
+            road_data = data.get('road_data', [])
+            weather_data = data.get('weather_data', {})
 
-# Step 3: Train the Model
-def train_model(X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # Scale numeric features
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    
-    # Train the model
-    model = RandomForestClassifier(random_state=42)
-    model.fit(X_train_scaled, y_train)
-    
-    # Evaluate the model
-    y_pred = model.predict(X_test_scaled)
-    print("Accuracy:", accuracy_score(y_test, y_pred))
-    print("Classification Report:\n", classification_report(y_test, y_pred))
-    
-    return model, scaler
+            # Extract features
+            flight_duration = (pd.to_datetime(flight_data['arrival']) - pd.to_datetime(flight_data['departure'])).total_seconds() / 3600 if flight_data else 0
+            flight_cost = flight_data['cost'] if flight_data else 0
+            road_duration = sum([wp.duration for wp in road_data]) / 3600 if road_data else 0
+            road_distance = sum([wp.distance for wp in road_data]) / 1000 if road_data else 0
+            temperature = (weather_data['source']['temp_c'] + weather_data['destination']['temp_c']) / 2
+            precipitation = (weather_data['source']['precip_mm'] + weather_data['destination']['precip_mm']) / 2
+            is_bad_weather = int(precipitation > 5 or temperature < 10)
 
-# Main Execution
-if __name__ == "__main__":
-    # Load railway data
-    railway_data = load_railway_data()
-    
-    # Feature engineering
-    railway_data = engineer_features(railway_data)
-    
-    # Select features and target
-    features = ['train_duration', 'is_bad_weather', 'flight_duration', 'road_duration']
-    X = railway_data[features]
-    y = railway_data['best_mode_encoded']
-    
-    # Train the model
-    model, scaler = train_model(X, y)
-    
-    # Save the model and scaler
-    MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
-    os.makedirs(MODEL_DIR, exist_ok=True)
-    joblib.dump(model, os.path.join(MODEL_DIR, 'transport_mode_model.pkl'))
-    joblib.dump(scaler, os.path.join(MODEL_DIR, 'scaler.pkl'))
-    print("Model and scaler saved successfully.")
+            # Prepare input for AI model
+            input_data = np.array([[flight_duration, flight_cost, road_duration, road_distance, temperature, precipitation, is_bad_weather]])
+
+            # Load AI model and scaler
+            model_path = os.path.join(BASE_DIR, 'models', 'transport_mode_model.pkl')
+            scaler_path = os.path.join(BASE_DIR, 'models', 'scaler.pkl')
+
+            model = joblib.load(model_path)
+            scaler = joblib.load(scaler_path)
+
+            # Scale input data
+            input_data_scaled = scaler.transform(input_data)
+
+            # Predict
+            prediction = model.predict(input_data_scaled)[0]
+            transport_modes = {0: 'flight', 1: 'road'}
+            best_mode = transport_modes.get(prediction, 'unknown')
+
+            # Return result
+            return JsonResponse({
+                'best_mode': best_mode,
+                'cost': flight_cost if best_mode == 'flight' else 'Variable'
+            })
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import joblib
+import os
+
+# Sample training data structure (replace with your own dataset)
+data = pd.read_csv('transport_dataset.csv')  # Replace with your actual path
+
+# Features and target
+X = data[['flight_duration', 'train_duration', 'road_duration', 'is_bad_weather']]
+y = data['preferred_mode']  # 0 = flight, 1 = train, 2 = road
+
+# Scale and train
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_scaled, y)
+
+# Save model and scaler
+model_dir = os.path.join('your_django_project', 'transport', 'models')
+os.makedirs(model_dir, exist_ok=True)
+
+joblib.dump(model, os.path.join(model_dir, 'transport_mode_model.pkl'))
+joblib.dump(scaler, os.path.join(model_dir, 'scaler.pkl'))
+
+print("Model and scaler saved.")

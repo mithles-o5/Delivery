@@ -1,0 +1,7 @@
+source,destination,weight_kg,src_weather,src_temp,dst_weather,dst_temp,road_duration_min,road_distance_km,road_cost_inr,rail_cost_inr,flight_duration_min,air_cost_inr
+Madurai,Chennai,1.0,Patchy light rain with thunder,32.3,Partly cloudy,35.2,362.08,453.305,75.0,,,150.0
+Madurai,Chennai,1.0,Mist,30.1,Partly cloudy,35.0,362.08,453.305,75.0,,,150.0
+Madurai,Chennai,1.0,Mist,31.3,Partly cloudy,31.3,362.08,453.305,422.43529096552146,422.43529096552146,75.0,,150.0,rail
+Madurai,Chennai,1.0,Mist,31.1,Partly cloudy,31.1,362.08,453.305,422.43529096552146,422.43529096552146,75.0,,150.0,rail
+Madurai,Chennai,1.0,Mist,31.1,Partly cloudy,31.1,362.08,453.305,422.43529096552146,422.43529096552146,75.0,,150.0,rail
+Madurai,Chennai,1.0,Mist,31.2,Partly cloudy,31.1,362.08,453.305,422.43529096552146,422.43529096552146,75.0,,150.0,rail

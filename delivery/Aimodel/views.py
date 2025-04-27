@@ -14,6 +14,8 @@ from rest_framework.views import APIView
 import joblib
 import numpy as np
 import os
+from pathlib import Path
+import sys
 
 # Transport Mode Prediction View
 @api_view(['POST'])
@@ -74,8 +76,11 @@ def login(request):
             return render(request, 'login.html', {'error': 'Invalid credentials'})
     return render(request, 'login.html')
 
+def home(request):
+    return render(request,'home.html')
 
-
+def profile(request):
+    return render(request,'profile.html')
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -84,7 +89,7 @@ def register(request):
             return redirect('login')  # Redirect to login page after registration
     else:
         form = UserCreationForm()
-    return render(request, 'registeration.html', {'form': form})
+    return render(request, 'D:/Dynamic Mailing/delivery/templates/registeration.html', {'form': form})
 
 def get_route(request):
     source = request.GET.get('source')
@@ -93,3 +98,39 @@ def get_route(request):
     # Example: Use OSRM or another routing service to calculate the route
     # Replace with actual routing logic
     return JsonResponse({"route": {"coordinates": [[78.9629, 20.5937], [78.476, 17.385]]}})
+
+# views.py inside Aimodel app
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+import os
+import json
+
+# Adjust import path if needed
+collect_script = Path(settings.BASE_DIR) / 'Aimodel' / 'collect_transport_data.py'
+sys.path.append(str(collect_script.parent))
+import collect_transport_data
+
+@csrf_exempt
+def get_transport_data(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST allowed'}, status=405)
+
+    try:
+        body = json.loads(request.body)
+        src = body.get('source')
+        dst = body.get('destination')
+        wt = float(body.get('weight', 1))
+
+        if not src or not dst:
+            return JsonResponse({'error': 'source and destination required'}, status=400)
+
+        data = collect_transport_data.collect_transport_data(src, dst, wt)
+        return JsonResponse(data)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()                  # prints the full stack to your console
+        return JsonResponse({
+            'error': str(e),
+            'trace': traceback.format_exc()[:500]  # first 500 chars of the stack
+        }, status=500)

@@ -49,6 +49,7 @@
     <div class="search-box">
         <input id="origin" type="text" placeholder="Enter source">
         <input id="destination" type="text" placeholder="Enter destination">
+        <input id="weight" type="number" placeholder="Enter weight (kg)" value="1" min="0.1" step="0.1">
         <button onclick="calculateRoute()">Show Route</button>
     </div>
     <div id="loading" class="loading">Calculating route...</div>
@@ -76,6 +77,13 @@
             "srinagar": "SXR", "thiruvananthapuram": "TRV", "varanasi": "VNS", "visakhapatnam": "VTZ"
         };
 
+        const cityToRailway = {
+            "delhi": "NDLS", "mumbai": "CSMT", "kolkata": "KOAA", "chennai": "MAS",
+            "bangalore": "SBC", "hyderabad": "SC", "ahmedabad": "ADI", "pune": "PUNE",
+            "jaipur": "JP", "lucknow": "LKO", "kanpur": "CNB", "nagpur": "NGP",
+            "patna": "PNBE", "ernakulam": "ERS", "guwahati": "GHY", "bhubaneswar": "BBS"
+        };
+
         function initMap() {
             map = L.map('map').setView([20.5937, 78.9629], 5);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -96,6 +104,7 @@
         async function calculateRoute() {
             const origin = document.getElementById('origin').value.trim();
             const destination = document.getElementById('destination').value.trim();
+            const weight = parseFloat(document.getElementById('weight').value) || 1;
             const loadingIndicator = document.getElementById('loading');
             const infoDiv = document.getElementById('info-details');
 
@@ -108,17 +117,18 @@
 
             const originAirport = getAirportCode(origin.toLowerCase());
             const destinationAirport = getAirportCode(destination.toLowerCase());
+            const originStation = getRailwayCode(origin.toLowerCase());
+            const destinationStation = getRailwayCode(destination.toLowerCase());
 
             try {
                 const originCoords = await geocodeAddressAsync(origin);
                 const destinationCoords = await geocodeAddressAsync(destination);
 
+                control.on('routesfound', () => loadingIndicator.style.display = 'none');
                 control.setWaypoints([
                     L.latLng(originCoords.lat, originCoords.lon),
                     L.latLng(destinationCoords.lat, destinationCoords.lon)
                 ]);
-
-                control.on('routesfound', () => loadingIndicator.style.display = 'none');
 
                 await fetchWeather(originCoords.lat, originCoords.lon, "Source", true);
                 await fetchWeather(destinationCoords.lat, destinationCoords.lon, "Destination");
@@ -127,10 +137,76 @@
                     await fetchFlightData(originAirport, destinationAirport);
                 }
 
+                if (originStation && destinationStation) {
+                    await fetchRailwayData(originStation, destinationStation);
+                }
+
+                const resp = await fetch('/api/get-transport-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ source: origin, destination: destination, weight })
+                });
+
+                if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+                const dt = await resp.json();
+
+                const roadDuration = dt.road_duration_min != null ? `${dt.road_duration_min.toFixed(1)} min` : 'N/A';
+                const roadCost = dt.road_cost_inr != null ? `₹${dt.road_cost_inr.toFixed(2)}` : 'N/A';
+                const railCost = dt.rail_cost_inr != null ? `₹${dt.rail_cost_inr.toFixed(2)}` : 'N/A';
+                const flightDuration = dt.flight_duration_min != null ? `${dt.flight_duration_min.toFixed(1)} min` : 'N/A';
+                const flightCost = dt.air_cost_inr != null ? `₹${dt.air_cost_inr.toFixed(2)}` : 'N/A';
+
+                infoDiv.innerHTML += `
+                    <h4>Transport Summary</h4>
+                    <p><strong>Road:</strong> ${roadDuration}, ${roadCost}</p>
+                    <p><strong>Rail:</strong> ${railCost}</p>
+                    <p><strong>Flight:</strong> ${flightDuration}, ${flightCost}</p>
+                `;
             } catch (err) {
-                alert(err.message);
+                const infoDiv = document.getElementById('info-details');
+                try {
+                    const body = await err.response?.text?.();
+                    infoDiv.innerHTML += `<p style="color:red;">Server error:</p><pre>${body}</pre>`;
+                } catch {
+                    infoDiv.innerHTML += `<p style="color:red;">${err.message}</p>`;
+                }
+            } finally {
                 loadingIndicator.style.display = 'none';
             }
+        }
+
+        async function fetchRailwayData(origin, destination) {
+            const apiKey = '16142bc4543c0e94ad892ec5d7d67958';
+            const div = document.getElementById('info-details');
+
+            try {
+                const response = await fetch(`https://indianrailapi.com/api/v2/TrainBetweenStation/apikey/${apiKey}/From/${origin}/To/${destination}`);
+                const data = await response.json();
+
+                if (data.Trains && data.Trains.length > 0) {
+                    const train = data.Trains[0];
+                    div.innerHTML += `
+                        <h4>Railway Details</h4>
+                        <p><strong>Train:</strong> ${train.TrainName} (${train.TrainNumber})</p>
+                        <p><strong>Departure:</strong> ${train.DepartureTime}</p>
+                        <p><strong>Arrival:</strong> ${train.ArrivalTime}</p>
+                        <p><strong>Duration:</strong> ${train.Duration}</p>
+                        <p><strong>Distance:</strong> ${train.Distance} km</p>
+                        <hr>
+                    `;
+                } else {
+                    div.innerHTML += `<h4>Railway Details</h4><p>No direct trains found between selected stations.</p><hr>`;
+                }
+            } catch (error) {
+                div.innerHTML += `<h4>Railway Details</h4><p>Error fetching train information.</p><hr>`;
+            }
+        }
+
+        function getRailwayCode(city) {
+            return cityToRailway[city] || null;
         }
 
         function geocodeAddressAsync(address) {
@@ -182,7 +258,6 @@
                             <h4>Flight Details</h4>
                             <p><strong>Departure:</strong> ${dep}</p>
                             <p><strong>Arrival:</strong> ${arr}</p>
-                            <p><strong>Cost:</strong> ₹${flight.price?.toFixed(2) || 'Not Available'}</p>
                             <hr>
                         `;
                     } else {
@@ -194,6 +269,18 @@
 
         function getAirportCode(city) {
             return cityToAirport[city] || null;
+        }
+
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    return decodeURIComponent(cookie.substring(name.length + 1));
+                }
+            }
+            return '';
         }
 
         initMap();
